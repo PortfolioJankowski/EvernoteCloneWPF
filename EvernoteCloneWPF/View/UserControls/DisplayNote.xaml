@@ -5,18 +5,16 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:EvernoteCloneWPF.View.UserControls"
              mc:Ignorable="d" 
-             d:DesignHeight="100" d:DesignWidth="300"
-             Background="DarkGray">
+             d:DesignHeight="100" d:DesignWidth="300">
     <StackPanel>
         <TextBlock Text="{Binding Title}"
-                   Foreground="AntiqueWhite"
+                   Foreground="White"
                    VerticalAlignment="Center"
-                   FontSize="18"
-                   FontWeight="Bold"/>
+                   FontSize="14"/>
         <TextBlock Text="{Binding UpdatedAt}"
-                    Foreground="AntiqueWhite"
+                    Foreground="White"
                     VerticalAlignment="Center"
-                     FontSize="16"/>
+                     FontSize="10"/>
 
     </StackPanel>
 </UserControl>

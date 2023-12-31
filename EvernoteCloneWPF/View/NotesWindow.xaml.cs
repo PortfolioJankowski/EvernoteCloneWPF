@@ -1,7 +1,11 @@
-﻿using Microsoft.CognitiveServices.Speech;
+﻿using EvernoteCloneWPF.ViewModel.Helper;
+using EvernoteCloneWPF.ViewModel.VM;
+using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Pipes;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,6 +27,7 @@ namespace EvernoteCloneWPF.View
     /// </summary>
     public partial class NotesWindow : Window
     {
+        NotesVM viewModel;
         public NotesWindow()
         {
             InitializeComponent();
@@ -31,6 +36,24 @@ namespace EvernoteCloneWPF.View
 
             List<double> fontSizes = new List<double>() { 8, 10, 12, 14, 16, 20, 24, 28, 48 };
             fontSizeComboBox.ItemsSource = fontSizes;
+
+            viewModel = Resources["vm"] as NotesVM;
+            viewModel.SelectedNoteChanged += ViewModel_SelectedNoteChanged;
+        }
+
+        private void ViewModel_SelectedNoteChanged(object? sender, EventArgs e)
+        {
+            contentRichTextBox.Document.Blocks.Clear();
+            if(viewModel.SelectedNote != null)
+            {
+                if (!string.IsNullOrEmpty(viewModel.SelectedNote.FileLocation))
+                {
+                    FileStream fileStream = new FileStream(viewModel.SelectedNote.FileLocation, FileMode.Open);
+                    var content = new TextRange(contentRichTextBox.Document.ContentStart, contentRichTextBox.Document.ContentEnd);
+                    content.Load(fileStream, DataFormats.Rtf);
+                } 
+            }
+            
         }
 
         private async void Button_Click(object sender, RoutedEventArgs e)
@@ -109,7 +132,7 @@ namespace EvernoteCloneWPF.View
             if (isButtonChecked)
                 contentRichTextBox.Selection.ApplyPropertyValue(Inline.FontStyleProperty, FontStyles.Italic);
             else
-                contentRichTextBox.Selection.ApplyPropertyValue(Inline.FontStyleProperty, FontStyles.Italic);
+                contentRichTextBox.Selection.ApplyPropertyValue(Inline.FontStyleProperty, FontStyles.Normal);
 
         }
 
@@ -124,6 +147,21 @@ namespace EvernoteCloneWPF.View
         private void fontSizeComboBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             contentRichTextBox.Selection.ApplyPropertyValue(Inline.FontSizeProperty, fontSizeComboBox.Text);
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            //tworzę ścieżkę pliku
+            string rtfFile = System.IO.Path.Combine(Environment.CurrentDirectory, $"{viewModel.SelectedNote.Id}.rtf");
+            //aktualizuje ścieżke notatki (właściwość obiektu notatka)
+            viewModel.SelectedNote.FileLocation = rtfFile;
+            //update do bazy
+            DatabaseHelper.Update(viewModel.SelectedNote);
+
+            //Tworzy się FileStream dla pliku RTF. Plik będzie utworzony (lub nadpisany, jeśli już istnieje) w trybie Create
+            FileStream filestream = new FileStream(rtfFile, FileMode.Create);
+            var content = new TextRange(contentRichTextBox.Document.ContentStart, contentRichTextBox.Document.ContentEnd);
+            content.Save(filestream, DataFormats.Rtf);
         }
     }
 }

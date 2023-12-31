@@ -8,6 +8,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace EvernoteCloneWPF.ViewModel.VM
 {
@@ -18,18 +19,50 @@ namespace EvernoteCloneWPF.ViewModel.VM
         public ObservableCollection<Note> Notes { get; set; }
         public NewNoteCommand NewNoteCommand { get; set; }
         public NewNotebookCommand NewNotebookCommand { get; set; }
+        public EditCommand EditCommand { get; set; }
+        public EndEditingCommand EndEditingCommand { get; set; }
+
+        private Visibility isVisible;
+        public Visibility IsVisible
+        {
+            get { return isVisible; }
+            set 
+            { 
+                isVisible = value;
+                OnPropertyChanged("IsVisible");
+            }
+        }
 
         public event PropertyChangedEventHandler? PropertyChanged;
+        public event EventHandler SelectedNoteChanged;
 
         public NotesVM()
         {
 			NewNoteCommand = new NewNoteCommand(this);
 			NewNotebookCommand = new NewNotebookCommand(this);
+            EditCommand = new EditCommand(this);
+            EndEditingCommand = new EndEditingCommand(this);
 
-			
-			Notebooks = new ObservableCollection<Notebook>();
+
+
+            Notebooks = new ObservableCollection<Notebook>();
 			Notes = new ObservableCollection<Note>();
-			GetNotebooks();
+
+            isVisible = Visibility.Collapsed;
+
+            GetNotebooks();
+        }
+        private Note selectedNote;
+
+        public Note SelectedNote
+        {
+            get { return selectedNote; }
+            set 
+            {
+                selectedNote = value;
+                OnPropertyChanged("SelectedNote");
+                SelectedNoteChanged?.Invoke(this, new EventArgs());
+            }
         }
 
         public Notebook SelectedNotebook
@@ -92,6 +125,17 @@ namespace EvernoteCloneWPF.ViewModel.VM
 
             DatabaseHelper.Insert(newNote);
             GetNotes();
+        }
+        public void StartEditing()
+        {
+            IsVisible = Visibility.Visible;
+        }
+
+        public void EndEditing(Notebook notebook)
+        {
+            IsVisible = Visibility.Collapsed;
+            DatabaseHelper.Update(notebook);
+            GetNotebooks();
         }
 
         private void OnPropertyChanged(string propertyName)

@@ -6,6 +6,7 @@
         xmlns:local="clr-namespace:EvernoteCloneWPF.View"
         xmlns:vm ="clr-namespace:EvernoteCloneWPF.ViewModel.VM"
         xmlns:uc ="clr-namespace:EvernoteCloneWPF.View.UserControls"
+        xmlns:i ="http://schemas.microsoft.com/xaml/behaviors"
         mc:Ignorable="d"
         Title="NotesWindow" Height="400" Width="800">
     <Window.Resources>
@@ -31,11 +32,31 @@
                   Background="Gray">
             <ListView.ItemTemplate>
                 <DataTemplate>
-                    <uc:DisplayNotebook Notebook="{Binding}"/>
+                    <Grid>
+                        <uc:DisplayNotebook Notebook="{Binding}">
+                            <uc:DisplayNotebook.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Rename"
+                                              DataContext="{StaticResource vm}"
+                                              Command="{Binding EditCommand}"/>
+                                </ContextMenu>
+                            </uc:DisplayNotebook.ContextMenu>
+                        </uc:DisplayNotebook>
+                        <TextBox Text="{Binding Name}"
+                                 Visibility="{Binding Source={StaticResource vm}, Path=IsVisible}">
+                            <i:Interaction.Triggers>
+                                <i:EventTrigger EventName="LostFocus">
+                                    <i:InvokeCommandAction Command="{Binding Source={StaticResource vm}, Path=EndEditingCommand}"
+                                                           CommandParameter="{Binding}"/>
+                                </i:EventTrigger>
+                            </i:Interaction.Triggers>
+                        </TextBox> 
+                    </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>
         </ListView>
         <ListView DockPanel.Dock="Left"
+                  SelectedValue="{Binding SelectedNote, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                   Width="160"
                   ItemsSource="{Binding Notes}"
                   Background="DarkGray">
@@ -72,6 +93,8 @@
                           Width="50"
                           IsEditable="True"
                           TextBoxBase.TextChanged="fontSizeComboBox_TextChanged" />
+                <Button Content="Save"
+                            Click="Button_Click_1"/>
             </ToolBar>  
         </ToolBarTray>
         <Grid>
