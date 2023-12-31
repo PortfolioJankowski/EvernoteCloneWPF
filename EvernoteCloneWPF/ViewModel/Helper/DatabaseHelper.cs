@@ -48,7 +48,7 @@ namespace EvernoteCloneWPF.ViewModel.Helper
         }
 
         // tu będzie zwrot listy<T> bo czytam z JAKIEJŚ (nie wiem jeszcze) tabeli
-        public static List<T> Read<T>(T item) where T : new()
+        public static List<T> Read<T>() where T : new()
         {
             List<T> items;
             using (SQLite.SQLiteConnection conn = new SQLite.SQLiteConnection(dbFile))
