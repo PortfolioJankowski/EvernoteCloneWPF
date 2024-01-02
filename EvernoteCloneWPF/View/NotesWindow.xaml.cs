@@ -41,6 +41,19 @@ namespace EvernoteCloneWPF.View
             viewModel.SelectedNoteChanged += ViewModel_SelectedNoteChanged;
         }
 
+        //nadpisuje event aktywacyjny w pierwszym oknie które się odpala
+        protected override void OnActivated(EventArgs e)
+        {
+            base.OnActivated(e);
+
+            if (string.IsNullOrEmpty(App.UserId))
+            {
+                //na początku UserId zainicjalizowane w APP jest równe empty stringowi, dlatego będzie odpalać
+                //login window
+                LoginWindow loginWindow = new LoginWindow();
+                loginWindow.ShowDialog();
+            }
+        }
         private void ViewModel_SelectedNoteChanged(object? sender, EventArgs e)
         {
             contentRichTextBox.Document.Blocks.Clear();

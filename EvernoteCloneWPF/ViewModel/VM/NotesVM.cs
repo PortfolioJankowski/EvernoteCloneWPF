@@ -43,8 +43,6 @@ namespace EvernoteCloneWPF.ViewModel.VM
             EditCommand = new EditCommand(this);
             EndEditingCommand = new EndEditingCommand(this);
 
-
-
             Notebooks = new ObservableCollection<Notebook>();
 			Notes = new ObservableCollection<Note>();
 
@@ -52,6 +50,8 @@ namespace EvernoteCloneWPF.ViewModel.VM
 
             GetNotebooks();
         }
+
+        
         private Note selectedNote;
 
         public Note SelectedNote
