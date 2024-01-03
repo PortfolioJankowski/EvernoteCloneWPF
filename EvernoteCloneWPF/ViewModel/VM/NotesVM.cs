@@ -76,9 +76,9 @@ namespace EvernoteCloneWPF.ViewModel.VM
             }
 		}
 
-		private void GetNotebooks()
+		private async void GetNotebooks()
 		{
-			var notebooks = DatabaseHelper.Read<Notebook>();
+			var notebooks = (await DatabaseHelper.Read<Notebook>()).Where(n => n.UserId == App.UserId).ToList();
 			Notebooks.Clear();
 
             foreach (var item in notebooks)
@@ -87,11 +87,11 @@ namespace EvernoteCloneWPF.ViewModel.VM
             }
         }
 
-        private void GetNotes()
+        private async void GetNotes()
         {
             if (SelectedNotebook != null)
             {
-                var notes = DatabaseHelper.Read<Note>().Where(n => n.NotebookId == SelectedNotebook.Id).ToList();
+                var notes = (await DatabaseHelper.Read<Note>()).Where(n => n.NotebookId == SelectedNotebook.Id).ToList();
                 Notes.Clear();
 
                 foreach (var item in notes)
@@ -102,18 +102,19 @@ namespace EvernoteCloneWPF.ViewModel.VM
             
         }
 
-        public void CreateNotebook()
+        public async Task CreateNotebookAsync()
         {
             Notebook newNotebook = new Notebook
             {
-                Name = "Notebook"
+                Name = "Notebook",
+                UserId = App.UserId
             };
-
-            DatabaseHelper.Insert(newNotebook);
+            //asynchronicznie, bo najpierw czekam aż wstawie w bazę danych, a potem sobie mogę pobrać
+            await DatabaseHelper.InsertAsync(newNotebook);
             GetNotebooks();
         }
 
-        public void CreateNotes(int notebookId)
+        public async Task CreateNotesAsync(string notebookId)
         {
             Note newNote = new Note
             {
@@ -123,7 +124,7 @@ namespace EvernoteCloneWPF.ViewModel.VM
                 UpdatedAt = DateTime.Now,
             };
 
-            DatabaseHelper.Insert(newNote);
+            await DatabaseHelper.InsertAsync(newNote);
             GetNotes();
         }
         public void StartEditing()

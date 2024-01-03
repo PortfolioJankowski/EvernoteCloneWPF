@@ -29,7 +29,7 @@ namespace EvernoteCloneWPF.ViewModel.Commands
 
         public void Execute(object? parameter)
         {
-           VM.CreateNotebook();
+           VM.CreateNotebookAsync();
         }
     }
 }

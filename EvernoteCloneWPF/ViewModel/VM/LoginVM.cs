@@ -1,5 +1,6 @@
 ﻿using EvernoteCloneWPF.Model;
 using EvernoteCloneWPF.ViewModel.Commands;
+using EvernoteCloneWPF.ViewModel.Helper;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -15,6 +16,7 @@ namespace EvernoteCloneWPF.ViewModel.VM
 		private User user;
         private bool isShowingRegister = false;
         public event PropertyChangedEventHandler? PropertyChanged;
+        public event EventHandler Authenticated;
 
         private string username;
 
@@ -164,9 +166,8 @@ namespace EvernoteCloneWPF.ViewModel.VM
             loginVis = Visibility.Visible;
             registerVis = Visibility.Collapsed;
             ShowRegisterCommand = new ShowRegisterCommand(this);
-            User = new User();
+            User = new User(); 
         }
-
         public void SwitchViews()
         {
             //kliknięcie przycisku wywołuje Command -> odwrotna wartość isShowingRegister
@@ -184,14 +185,25 @@ namespace EvernoteCloneWPF.ViewModel.VM
             }
         }
 
-        public void Login()
+        public async void Login()
         {
-            //TODO
+           bool result = await FirebaseAuthHelper.LoginAsync(User);
+            if (result)
+            {
+                //jeżeli zwróciło mi prawdę - ktoś się zalogował to odpalam event, który jest ogrywany w code behind formy
+                //choć co prawda ten event został stworzony tak jak właściwość w viewModelu.
+                Authenticated?.Invoke(this, new EventArgs());
+            }
         }
 
-        public void Register()
+        public async void Register()
         {
-            //TODO
+            //jeżeli zwróciło mi prawdę - ktoś się zarejestrował to odpalam event, który jest ogrywany w code behind formy
+            bool result = await FirebaseAuthHelper.RegisterAsync(User);
+            if (result)
+            {
+                Authenticated?.Invoke(this, new EventArgs());
+            }
         }
 
         private void OnPropertyChanged(string propertyName)

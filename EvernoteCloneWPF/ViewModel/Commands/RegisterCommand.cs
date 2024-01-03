@@ -14,6 +14,7 @@ namespace EvernoteCloneWPF.ViewModel.Commands
         //w jakim VM ten command jest?:
         public LoginVM VM { get; set; }
 
+
         public event EventHandler? CanExecuteChanged;
 
         public RegisterCommand(LoginVM vm)

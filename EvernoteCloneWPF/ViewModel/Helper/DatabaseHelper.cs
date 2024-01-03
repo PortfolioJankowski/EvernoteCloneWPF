@@ -1,7 +1,10 @@
-﻿using System;
+﻿using EvernoteCloneWPF.Model;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -10,54 +13,93 @@ namespace EvernoteCloneWPF.ViewModel.Helper
     public class DatabaseHelper
     {
        private static string dbFile = Path.Combine(Environment.CurrentDirectory, "notesDb.db3");
-    
-       public static bool Insert<T>(T item)
+       private static string dbPath = "https://nevernote-511c2-default-rtdb.firebaseio.com/";
+
+        public static async Task<bool> InsertAsync<T>(T item)
         {
-            bool result = false;
-            using(SQLite.SQLiteConnection conn = new SQLite.SQLiteConnection(dbFile))
+            
+            string jsonBody = JsonConvert.SerializeObject(item);
+            var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+            using (var client = new HttpClient())
             {
-                conn.CreateTable<T>();
-                int rows = conn.Insert(item);
-                if (rows > 0) result = true;
+                var result = await client.PostAsync($"{dbPath}{item.GetType().Name.ToLower()}.json", content);
+
+                if (result.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
-            return result;
+        }
+        //jeżeli item jest z klasy T i zadeklaruje, że T implementuje HasId
+        //to w kodzie będę mógł się odwołać do item.prop z interfejsu 
+        public async static Task<bool> Update<T>(T item) where T : HasId
+        {
+            string jsonBody = JsonConvert.SerializeObject(item);
+            var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+            using (var client = new HttpClient())
+            {
+                var result = await client.PatchAsync($"{dbPath}{item.GetType().Name.ToLower()}/{item.Id}.json", content);
+
+                if (result.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
         }
 
-        public static bool Update<T>(T item)
+        public async static Task<bool> Delete<T>(T item) where T : HasId
         {
-            bool result = false;
-            using (SQLite.SQLiteConnection conn = new SQLite.SQLiteConnection(dbFile))
+            using (var client = new HttpClient())
             {
-                conn.CreateTable<T>();
-                int rows = conn.Update(item);
-                if (rows > 0) result = true;
-            }
-            return result;
-        }
+                var result = await client.DeleteAsync($"{dbPath}{item.GetType().Name.ToLower()}/{item.Id}.json");
 
-        public static bool Delete<T>(T item)
-        {
-            bool result = false;
-            using (SQLite.SQLiteConnection conn = new SQLite.SQLiteConnection(dbFile))
-            {
-                conn.CreateTable<T>();
-                int rows = conn.Delete(item);
-                if (rows > 0) result = true;
+                if (result.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
             }
-            return result;
         }
 
         // tu będzie zwrot listy<T> bo czytam z JAKIEJŚ (nie wiem jeszcze) tabeli
-        public static List<T> Read<T>() where T : new()
+        // już wiem z jakiej -> obiekty z tej tabeli implementują interfejs HasId
+        public static async Task<List<T>> Read<T>() where T : HasId
         {
-            List<T> items;
-            using (SQLite.SQLiteConnection conn = new SQLite.SQLiteConnection(dbFile))
+            using (var client = new HttpClient())
             {
-                conn.CreateTable<T>();
-                //bez tego where T:new() nie mógłbym użyć poniższej metody, bo nie może być to abstrakt
-                items = conn.Table<T>().ToList();
+                var result = await client.GetAsync($"{dbPath}{typeof(T).Name.ToLower()}.json");
+
+                var jsonResult = await result.Content.ReadAsStringAsync();
+                if (result.IsSuccessStatusCode)
+                {
+                    var objects = JsonConvert.DeserializeObject<Dictionary<string, T>>(jsonResult);
+                    List<T> list = new List<T>();
+                    foreach(var o in objects)
+                    {
+                        o.Value.Id = o.Key;
+                        list.Add(o.Value);
+                    }
+                    return list;
+                }
+                else
+                {
+                    return null;
+                }
+                
             }
-            return items;
         }
     }
 }

@@ -33,7 +33,7 @@ namespace EvernoteCloneWPF.ViewModel.Commands
         public void Execute(object? parameter)
         {
             Notebook selectedNotebook = parameter as Notebook;
-            VM.CreateNotes(selectedNotebook.Id);
+            VM.CreateNotesAsync(selectedNotebook.Id);
         }
     }
 }
