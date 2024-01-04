@@ -1,5 +1,6 @@
 ﻿using EvernoteCloneWPF.Model;
 using Newtonsoft.Json;
+using SQLite;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -76,30 +77,60 @@ namespace EvernoteCloneWPF.ViewModel.Helper
 
         // tu będzie zwrot listy<T> bo czytam z JAKIEJŚ (nie wiem jeszcze) tabeli
         // już wiem z jakiej -> obiekty z tej tabeli implementują interfejs HasId
-        public static async Task<List<T>> Read<T>() where T : HasId
+        public static async Task<List<T>> Read<T>() where T  : HasId
         {
+            //List<T> items;
+
+            //using (SQLiteConnection conn = new SQLiteConnection(dbFile))
+            //{
+            //    conn.CreateTable<T>();
+            //    items = conn.Table<T>().ToList();
+            //}
+
+            //return items;
             using (var client = new HttpClient())
             {
-                var result = await client.GetAsync($"{dbPath}{typeof(T).Name.ToLower()}.json");
+                try
+                {
+                    var result = await client.GetAsync($"{dbPath}{typeof(T).Name.ToLower()}.json");
+                    var jsonResult = await result.Content.ReadAsStringAsync();
 
-                var jsonResult = await result.Content.ReadAsStringAsync();
-                if (result.IsSuccessStatusCode)
-                {
-                    var objects = JsonConvert.DeserializeObject<Dictionary<string, T>>(jsonResult);
-                    List<T> list = new List<T>();
-                    foreach(var o in objects)
+                    if (result.IsSuccessStatusCode)
                     {
-                        o.Value.Id = o.Key;
-                        list.Add(o.Value);
+                        var objects = JsonConvert.DeserializeObject<Dictionary<string, T>>(jsonResult);
+                        if (objects != null)
+                        {
+                            List<T> list = new List<T>();
+                            foreach (var o in objects)
+                            {
+                                o.Value.Id = o.Key;
+                                list.Add(o.Value);
+                            }
+
+                            return list;
+                        }
+                        else
+                        {
+                            List<T> elist = new List<T>();
+                            return elist;
+                        }
+                        
                     }
-                    return list;
+                    else
+                    {
+                       
+                        Console.WriteLine($"HTTP request failed with status code: {result.StatusCode}");
+                        return null;
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
+
+                    Console.WriteLine($"An error occurred: {ex.Message}");
                     return null;
                 }
-                
             }
         }
+
     }
 }

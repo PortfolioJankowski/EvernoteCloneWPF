@@ -1,4 +1,6 @@
-﻿using EvernoteCloneWPF.ViewModel.Helper;
+﻿using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using EvernoteCloneWPF.ViewModel.Helper;
 using EvernoteCloneWPF.ViewModel.VM;
 using Microsoft.CognitiveServices.Speech;
 using Microsoft.CognitiveServices.Speech.Audio;
@@ -7,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
@@ -61,9 +64,12 @@ namespace EvernoteCloneWPF.View
             {
                 if (!string.IsNullOrEmpty(viewModel.SelectedNote.FileLocation))
                 {
-                    FileStream fileStream = new FileStream(viewModel.SelectedNote.FileLocation, FileMode.Open);
-                    var content = new TextRange(contentRichTextBox.Document.ContentStart, contentRichTextBox.Document.ContentEnd);
-                    content.Load(fileStream, DataFormats.Rtf);
+                    using (FileStream fileStream = new FileStream(viewModel.SelectedNote.FileLocation, FileMode.Open))
+                    {
+                        var content = new TextRange(contentRichTextBox.Document.ContentStart, contentRichTextBox.Document.ContentEnd);
+                        content.Load(fileStream, DataFormats.Rtf);
+                    } ;
+                    
                 } 
             }
             
@@ -131,9 +137,7 @@ namespace EvernoteCloneWPF.View
                 TextDecorationCollection textDecorations;
                 (contentRichTextBox.Selection.GetPropertyValue(Inline.TextDecorationsProperty) as TextDecorationCollection).TryRemove(TextDecorations.Underline, out textDecorations);
                 contentRichTextBox.Selection.ApplyPropertyValue(Inline.TextDecorationsProperty, textDecorations);
-            }
-               
-                
+            }       
         }
 
         private void ItalicButton_Click(object sender, RoutedEventArgs e)
@@ -146,9 +150,7 @@ namespace EvernoteCloneWPF.View
                 contentRichTextBox.Selection.ApplyPropertyValue(Inline.FontStyleProperty, FontStyles.Italic);
             else
                 contentRichTextBox.Selection.ApplyPropertyValue(Inline.FontStyleProperty, FontStyles.Normal);
-
         }
-
         private void fontFamilyComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if(fontFamilyComboBox.SelectedItem != null)
@@ -156,25 +158,46 @@ namespace EvernoteCloneWPF.View
                 contentRichTextBox.Selection.ApplyPropertyValue(Inline.FontFamilyProperty, fontFamilyComboBox.SelectedItem);
             }
         }
-
         private void fontSizeComboBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             contentRichTextBox.Selection.ApplyPropertyValue(Inline.FontSizeProperty, fontSizeComboBox.Text);
         }
-
-        private void Button_Click_1(object sender, RoutedEventArgs e)
+        private async void Button_Click_1(object sender, RoutedEventArgs e)
         {
+            //tworzę nazwę mojego pliku
+            string fileName = $"{viewModel.SelectedNote.Id}.rtf";
             //tworzę ścieżkę pliku
-            string rtfFile = System.IO.Path.Combine(Environment.CurrentDirectory, $"{viewModel.SelectedNote.Id}.rtf");
-            //aktualizuje ścieżke notatki (właściwość obiektu notatka)
-            viewModel.SelectedNote.FileLocation = rtfFile;
-            //update do bazy
-            DatabaseHelper.Update(viewModel.SelectedNote);
+            string rtfFile = System.IO.Path.Combine(Environment.CurrentDirectory, fileName);
 
             //Tworzy się FileStream dla pliku RTF. Plik będzie utworzony (lub nadpisany, jeśli już istnieje) w trybie Create
-            FileStream filestream = new FileStream(rtfFile, FileMode.Create);
-            var content = new TextRange(contentRichTextBox.Document.ContentStart, contentRichTextBox.Document.ContentEnd);
-            content.Save(filestream, DataFormats.Rtf);
+            using (FileStream filestream = new FileStream(rtfFile, FileMode.Create))
+            {
+                //pobieram TextRanga między początkiem a końcem mojego EdytoraTekstu
+                var content = new TextRange(contentRichTextBox.Document.ContentStart, contentRichTextBox.Document.ContentEnd);
+                content.Save(filestream, DataFormats.Rtf);
+            } ;
+            //aktualizuje ścieżke notatki (właściwość obiektu notatka)
+            viewModel.SelectedNote.FileLocation = await UpdateFile(rtfFile, fileName);
+            //leci na firebase - serializuje się do JSONA i naura
+            await DatabaseHelper.Update(viewModel.SelectedNote);
+        }
+
+        private async Task<string> UpdateFile(string rtfFile, string fileName)
+        {
+            //połączenie z Azure
+            string connectionString = "DefaultEndpointsProtocol=https;AccountName=nevernotestorage;AccountKey=jz48g0u8721pa1H9XX66H0i/CTnkh+EVZhlrTJFQz145Nve+t6CoInYimgLDd7J/DF//UVpSwiW8+AStBFrDyw==;EndpointSuffix=core.windows.net";
+            string containerName = "notes";
+
+            var container = new BlobContainerClient(connectionString, containerName);
+            // await container.CreateIfNotExistsAsync(); -> to niepotrzebne bo tworzę ten kontener przez platformę Azure
+
+            var blob = container.GetBlobClient(fileName);
+            //rtfFile to tak właściwie ścieżka do pliku :D
+            await blob.UploadAsync(rtfFile);
+            
+            //ta metoda ma zwrócić lokalizacje pliku z notatkami, co w tym wypadku będzie
+            //linkiem do mojego kontenera z Azura
+            return $"https://nevernotestorage.blob.core.windows.net/notes/{fileName}";
         }
     }
 }

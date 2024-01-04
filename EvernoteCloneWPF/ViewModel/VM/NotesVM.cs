@@ -76,7 +76,7 @@ namespace EvernoteCloneWPF.ViewModel.VM
             }
 		}
 
-		private async void GetNotebooks()
+		public async void GetNotebooks()
 		{
 			var notebooks = (await DatabaseHelper.Read<Notebook>()).Where(n => n.UserId == App.UserId).ToList();
 			Notebooks.Clear();
@@ -107,7 +107,7 @@ namespace EvernoteCloneWPF.ViewModel.VM
             Notebook newNotebook = new Notebook
             {
                 Name = "Notebook",
-                UserId = App.UserId
+                UserId = App.UserId,
             };
             //asynchronicznie, bo najpierw czekam aż wstawie w bazę danych, a potem sobie mogę pobrać
             await DatabaseHelper.InsertAsync(newNotebook);
