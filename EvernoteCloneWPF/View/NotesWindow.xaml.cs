@@ -57,15 +57,21 @@ namespace EvernoteCloneWPF.View
                 loginWindow.ShowDialog();
             }
         }
-        private void ViewModel_SelectedNoteChanged(object? sender, EventArgs e)
+        private async void ViewModel_SelectedNoteChanged(object? sender, EventArgs e)
         {
             contentRichTextBox.Document.Blocks.Clear();
             if(viewModel.SelectedNote != null)
             {
+                //notatka się zmienia -> jeśli jest Filelocation to
                 if (!string.IsNullOrEmpty(viewModel.SelectedNote.FileLocation))
                 {
-                    using (FileStream fileStream = new FileStream(viewModel.SelectedNote.FileLocation, FileMode.Open))
-                    {
+                    //będę chciał pobrać sobie tą notatke z Azura na kompa, więc tworze sobie ścieżkę
+                    string downloadPath = $"{viewModel.SelectedNote.Id}.rtf";
+                    //pobieramy z Azure
+                    await new BlobClient(new Uri(viewModel.SelectedNote.FileLocation)).DownloadToAsync(downloadPath);
+                    using (FileStream fileStream = new FileStream(downloadPath, FileMode.Open))
+                    {   
+                        //otwieram sobie plik i przypisuje sobie do textranga w edytorze 
                         var content = new TextRange(contentRichTextBox.Document.ContentStart, contentRichTextBox.Document.ContentEnd);
                         content.Load(fileStream, DataFormats.Rtf);
                     } ;
