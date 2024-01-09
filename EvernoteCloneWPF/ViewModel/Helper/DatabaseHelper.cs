@@ -14,7 +14,7 @@ namespace EvernoteCloneWPF.ViewModel.Helper
     public class DatabaseHelper
     {
        private static string dbFile = Path.Combine(Environment.CurrentDirectory, "notesDb.db3");
-       private static string dbPath = "https://nevernote-511c2-default-rtdb.firebaseio.com/";
+       private static string dbPath = "***********************";
 
         public static async Task<bool> InsertAsync<T>(T item)
         {
