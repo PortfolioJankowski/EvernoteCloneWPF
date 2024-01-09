@@ -13,7 +13,7 @@ namespace EvernoteCloneWPF.ViewModel.Helper
 {
     public class FirebaseAuthHelper
     {
-        private static string api_key = "AIzaSyAVDNWeRqxGpEkmIF69QcAnrgSuDTOEKgM";
+        private static string api_key = "**********************";
         public static async Task<bool> RegisterAsync(User user)
         {
             using (HttpClient client = new HttpClient())
