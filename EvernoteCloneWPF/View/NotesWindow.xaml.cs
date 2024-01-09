@@ -191,7 +191,7 @@ namespace EvernoteCloneWPF.View
         private async Task<string> UpdateFile(string rtfFile, string fileName)
         {
             //połączenie z Azure
-            string connectionString = "*****************************************==;EndpointSuffix=core.windows.net";
+            string connectionString = "************************************************";
             string containerName = "notes";
 
             var container = new BlobContainerClient(connectionString, containerName);
